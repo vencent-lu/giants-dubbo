@@ -1,0 +1,2 @@
+providerTraceFilter=com.giants.dubbo.chain.trace.zipkin.DubboProviderInterceptor
+consumerTraceFilter=com.giants.dubbo.chain.trace.zipkin.DubboConsumerInterceptor
