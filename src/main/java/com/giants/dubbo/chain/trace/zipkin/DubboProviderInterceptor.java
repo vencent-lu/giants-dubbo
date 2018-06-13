@@ -9,13 +9,12 @@ import java.util.Map;
 
 import com.alibaba.dubbo.common.Constants;
 import com.alibaba.dubbo.common.extension.Activate;
-import com.alibaba.dubbo.common.utils.ConfigUtils;
 import com.alibaba.dubbo.rpc.Filter;
 import com.alibaba.dubbo.rpc.Invocation;
 import com.alibaba.dubbo.rpc.Invoker;
 import com.alibaba.dubbo.rpc.Result;
 import com.alibaba.dubbo.rpc.RpcException;
-import com.giants.dubbo.chain.trace.zipkin.common.ZipkinConstants;
+import com.giants.common.exception.BusinessException;
 import com.github.kristofa.brave.Brave;
 import com.github.kristofa.brave.KeyValueAnnotation;
 import com.github.kristofa.brave.ServerRequestAdapter;
@@ -24,11 +23,6 @@ import com.github.kristofa.brave.ServerResponseAdapter;
 import com.github.kristofa.brave.ServerResponseInterceptor;
 import com.github.kristofa.brave.SpanId;
 import com.github.kristofa.brave.TraceData;
-
-import zipkin.reporter.AsyncReporter;
-import zipkin.reporter.Reporter;
-import zipkin.reporter.Sender;
-import zipkin.reporter.okhttp3.OkHttpSender;
 
 /**
  * dubbo服务提供者拦截器
@@ -98,6 +92,7 @@ public class DubboProviderInterceptor implements Filter{
         }
 
         
+        @SuppressWarnings("unused")
         public Collection<KeyValueAnnotation> requestAnnotations() {
             SocketAddress socketAddress = null;
             if (socketAddress != null) {
@@ -118,11 +113,20 @@ public class DubboProviderInterceptor implements Filter{
             this.result = result;
         }
 
-        @SuppressWarnings("unchecked")
         public Collection<KeyValueAnnotation> responseAnnotations() {
-            return !result.hasException()
-                ? Collections.<KeyValueAnnotation>emptyList()
-                : Collections.singletonList(KeyValueAnnotation.create("error", result.getException().getMessage()));
+            if (!result.hasException()) {
+                return Collections.<KeyValueAnnotation>emptyList();
+            } else {
+                if (result.getException() instanceof BusinessException) {
+                    return Collections.singletonList(KeyValueAnnotation.create("result", result.getException().getMessage()));
+                } else {
+                    String errorValue = result.getException().getMessage();
+                    if (errorValue == null) {
+                        errorValue = result.getException().toString();
+                    }
+                    return Collections.singletonList(KeyValueAnnotation.create("error", errorValue));
+                }                
+            }
         }
 
     }
